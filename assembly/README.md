@@ -1,4 +1,4 @@
-## AT&T syntax
+# AT&T syntax
 
 GCC uses AT&T assembly syntax (instruction source, destination).
 
@@ -82,3 +82,63 @@ This moves data from a register to another.
 ```assembly
 movl %eax, %ebx
 ```
+
+### Syntax
+
+* Lines begining with periods are **assembler directives** (i.e., `.file`).
+These are commands that instruct the assembler how to do the job.
+The way directives work is by creating an entry in the symbol table.
+
+* Lines that begin with text and are followed by a colon are **labels** 
+(i.e., `main:`).
+
+
+
+
+
+
+### GAS
+
+## Call stack
+
+The call stack is a stack data structure tha stores information about the
+active subroutines of a computer program 
+[call stack](https://en.wikipedia.org/wiki/Call_stack).
+
+The call stck is composed of stack frames. 
+These are machine dependent and ABI dependent stat strcutures containing
+subroutine state information 
+[call stack structure](https://en.wikipedia.org/wiki/Call_stack#Structure).
+This data is sometimes refered to as **CFI** (call frame information).
+
+
+### CFI directives
+
+One huge reason for cfi directives and call stacks is the ability to do stack
+traces. 
+Recall the **procedure prolog** and the **procedure epilog** will look
+something like this (IA-32)
+```assembly
+push %ebp
+movl %esp, %ebp
+
+/*
+instrcutions...
+*/
+
+popl %ebp
+ret
+```
+
+Following the system v abi on an intel x86-64 processor, you may also see something like this
+```assembly
+pushq   %rbp
+movq    %rsp, %rbp
+
+# some instructions
+
+leave
+ret
+```
+
+With this setup a debugger can unwind the call stack.

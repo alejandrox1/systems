@@ -24,3 +24,21 @@ registers rdi, rsi, rdx, and rcx. In IA-32 you may recognize these registers as
 edi, esi, edx, and ecx.
 For more info, see 
 [x86 calling conventions](https://en.wikipedia.org/wiki/X86_calling_conventions).
+
+
+### Preamble
+`.file "example1.c"` creates an entry in the symbol table specifying that
+example1.c is associated with the object file.
+
+The `.text` directive declares the begining of the `.text` section (the place
+where instruction go, usually read-only).
+
+The directive `.globl` defines the function `function` as a global symbol. 
+A global symbol definition in one file satisfies an undefined reference to the
+same global symbol in another file.
+
+`.type function, @function` declares the the symbol `function` as a `@function`
+type.
+
+
+
