@@ -86,3 +86,26 @@ stack for the callee and
 .cfi_def_cfa_register 6
 ```
 tells the system that the call frame address is at register 6, `rbp`.
+
+
+After this we allocate space for local variables by subtracting their size from
+the stack pointer (stack grows downward)
+```assembly
+subq $48, %rsp
+```
+
+The 48 comes from the fact that memory can only be addressed in multiples of a
+word (in our case 4 bytes). 
+So `char buffer2[10]` which holds 10 bytes will be allocaed in a space space of
+12 bytes.
+`char buffer`[5]`, which holds 5 bytes will be allocated 8 bytes.
+This thus far makes 20 bytes.
+
+Now recall the cfa offsets declared at the prologe: we saved the frame pointer
+(`pushq %rbp` - 8 bytes), and then we have the return address (the `call` 
+insruction saves the address of the next instruction) which is another 8 bytes.
+
+Finally, we have 3 arguments, `a`, `b`, and `c` which are each allocated 4
+bytes.
+
+This all totalling to 48 bytes.
