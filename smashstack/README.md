@@ -41,4 +41,48 @@ same global symbol in another file.
 type.
 
 
+### function
+If you notice, we start the function declaration using cfi directive
+`.cfi_startproc`.
+This directive is used at the begining of each function that is to have an
+entry in `.eh_frame`.
+The directive initializes internal data structures.
 
+Any function that starts with a `.cf_startproc` must end with a `.cfi_endproc`.
+
+
+Since a `call` insructions saves the addess of the instruction to be executed
+after a call onto the stack, we need to save this value by pushing a quad
+(64 bits) onto the stack (assuming an x86-64 arch)
+```assembly
+pushq %rbp
+```
+
+> Here we will refer to registers by numbers: 1. rax(eax), 2. rcx(ecx), 3.
+> rdx(edx), 4. rbx (ebx), 5. rsp (esp), 6. rbp (ebp), 7. rsi (esi), and 8. rdi
+> (edi).
+
+After this we see 
+```assembly
+.cfi_def_cfa_offset 16
+```
+This indicates that we need to use the new offset of 16 to compute the cfa. 
+This is due to the fact that we have just stored another 8 bytes from the
+return address already stored in the stack - hence the offset of 8 + 8 = 16
+bytes.
+
+```assembly
+.cfi_offset 6, -16
+```
+Will save the value of register 6, `rbp`, at offset -16 from cfa.
+
+Finally,
+```assembly
+movq %rsp, %rbp
+```
+Moves the value of the stack pointer to the stack base pointer, collapsing the
+stack for the callee and
+```assembly
+.cfi_def_cfa_register 6
+```
+tells the system that the call frame address is at register 6, `rbp`.
