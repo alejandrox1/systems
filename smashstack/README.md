@@ -1,5 +1,7 @@
 # [Smash the stack](https://insecure.org/stf/smashstack.html)
 
+## The stack region
+
 Keep in mind that GCC will use AT&T assembly syntax (instruction source,
 destination). If you need a refresher on assembly see
 [assembly](../assembly/README.md).
@@ -98,7 +100,7 @@ The 48 comes from the fact that memory can only be addressed in multiples of a
 word (in our case 4 bytes). 
 So `char buffer2[10]` which holds 10 bytes will be allocaed in a space space of
 12 bytes.
-`char buffer`[5]`, which holds 5 bytes will be allocated 8 bytes.
+`char buffer[5]`, which holds 5 bytes will be allocated 8 bytes.
 This thus far makes 20 bytes.
 
 Now recall the cfa offsets declared at the prologe: we saved the frame pointer
@@ -109,3 +111,105 @@ Finally, we have 3 arguments, `a`, `b`, and `c` which are each allocated 4
 bytes.
 
 This all totalling to 48 bytes.
+
+
+<!-- --------------------------------------------------------------------- -->
+## Buffer overflows
+
+Running `example2.c` will give you this output
+```
+$ ./a.out
+*** stack smashing detected ***: <unknown> terminated
+Aborted (core dumped)
+```
+
+
+If you notice, in he assembly version of `example-2`, when we call `function`,
+we have:
+```assembly
+movq    %rax, %rdi
+call    function
+```
+
+So, for starters, when whe pass `char *str`, we make use of the 64-bit version
+of the register instead of the 32-bit version as before, `rdi` versus `edi`
+respectively.
+
+Hence, the stack lay out will constitute of 16 bytes at the bottom for
+`buffer[]`, 8 bytes for `sfp`, 8 bytes for `ret`.
+This comes to a total of 40 bytes. 
+However, if we see the actual assembly for `function` we see something like the
+follwoing:
+```assembly
+function:                                                                       
+    pushq   %rbp                                                                
+    movq    %rsp, %rbp                                                          
+    subq    $48, %rsp                                                           
+    movq    %rdi, -40(%rbp)                                                     
+    movq    %fs:40, %rax                                                        
+    movq    %rax, -8(%rbp)                                                      
+    xorl    %eax, %eax                                                          
+    movq    -40(%rbp), %rdx                                                     
+    leaq    -32(%rbp), %rax                                                     
+    movq    %rdx, %rsi                                                          
+    movq    %rax, %rdi                                                          
+    call    strcpy@PLT                                                          
+    nop                                                                         
+    movq    -8(%rbp), %rax                                                      
+    xorq    %fs:40, %rax                                                        
+    je  .L2                                                                     
+    call    __stack_chk_fail@PLT                                                
+.L2:                                                                            
+    leave                                                                       
+    ret                                                                         
+```
+
+We see the function prologe followed by the instruction `subq $48, %rsp`.
+ThThere are 48 bytes being given to the stack when we expected to use only 40!
+But, if you notice how we prepare the stack for the call to `strcpy@PLT` you'll
+see that we need the extra 8 bytes to 
+
+We save the argument being passed to `function` into the stack, `movq rdi,
+-40(%rbp)`. 
+After this, we pass the reference to the argument from the stack to `rdx` and
+then we pass the next 8 bytes from the stack as the first argument to
+`strcpy@PLT`.
+We need those 8 bytes extra to call another function.
+
+Also, notice how the compiler seems to place a stack guard in `%fs:40`. This is
+what allows the system to know when the stack is overflowing
+(`__stack_ch_fail@PLT`).
+
+Back to the core dump.
+`strcpy` will try to copy the contents from `large_string` to `buffer[]`.
+This will cause 250 past `buffer[]` to be overwritten with the contents of
+`large_string`, this includes `sfp`, `ret`, and `large_string` itself.
+Since all the entries in `large_string` were the character A (`0x41` or `65`).
+This will make the return address `0x41414141` which will be outside of the
+processes' address space.
+
+By changing the return address in this way we can conntrol the execution flow.
+
+
+```
+Dump of assembler code for function function:
+   0x0000051d <+0>:	push   ebp
+   0x0000051e <+1>:	mov    ebp,esp
+   0x00000520 <+3>:	sub    esp,0x20
+   0x00000523 <+6>:	call   0x59f <__x86.get_pc_thunk.ax>
+   0x00000528 <+11>:	add    eax,0x1ab0
+   0x0000052d <+16>:	lea    eax,[ebp-0xc]
+   0x00000530 <+19>:	add    eax,0x10
+   0x00000533 <+22>:	mov    DWORD PTR [ebp-0x4],eax
+   0x00000536 <+25>:	mov    eax,DWORD PTR [ebp-0x4]
+   0x00000539 <+28>:	mov    eax,DWORD PTR [eax]
+   0x0000053b <+30>:	lea    edx,[eax+0x8]
+   0x0000053e <+33>:	mov    eax,DWORD PTR [ebp-0x4]
+   0x00000541 <+36>:	mov    DWORD PTR [eax],edx
+   0x00000543 <+38>:	nop
+   0x00000544 <+39>:	leave
+   0x00000545 <+40>:	ret
+```
+
+`0x0000052d` tells us that `buffer1` is at `ebp-0xc`, and `0x00000533` tells us
+`ret` is at `ebp-0x4`
