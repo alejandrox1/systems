@@ -20,7 +20,7 @@ set -e
 ##                        Environment and Variables                          ##
 ###############################################################################
 # Version for building cross-compiler.
-TARGET=i386-jos-elf
+TARGET=i686-elf
 BINUTILS_VER="2.24"
 GCC_VER="5.4.0"
 GDB_VER="7.11.1"
@@ -80,6 +80,12 @@ get_pkg "${BINUTILS}" "ftp://ftp.gnu.org/gnu/binutils/binutils-${BINUTILS_VER}.t
 get_pkg "${GCC}" "ftp://ftp.gnu.org/gnu/gcc/gcc-${GCC_VER}/gcc-${GCC_VER}.tar.gz";
 get_pkg "${GDB}" "ftp://ftp.gnu.org/gnu/gdb/gdb-${GDB_VER}.tar.gz" 
 
+
+# Install dependencies
+sudo apt-get update -y \
+    && sudo apt-get install -y build-essential bison flex \
+    libgmp3-dev libmpc-dev libmpfr-dev texinfo #libcloog-isl-dev libisl-dev
+
 # Build cross-compiler.
 (
     cd "${BD_BINUTILS}";
@@ -87,6 +93,7 @@ get_pkg "${GDB}" "ftp://ftp.gnu.org/gnu/gdb/gdb-${GDB_VER}.tar.gz"
         make && \
         make install && \
         echo -e "${GRE}>>> Finished making ${BINUTILS}.\n${NOC}";
+    sleep 5
 ) && \
 (
     which -- ${TARGET}-as || echo ${TARGET}-as is not in the PATH && \
@@ -97,16 +104,18 @@ get_pkg "${GDB}" "ftp://ftp.gnu.org/gnu/gdb/gdb-${GDB_VER}.tar.gz"
         make install-gcc && \
         make install-target-libgcc && \
         echo -e "${GRE}>>> Finished making ${GCC}.\n${NOC}";
+    sleep 5
 ) && \
 (
     cd "${BD_GDB}";
-    # If GDB fails to nstall on the Docs section you may need to install
+    # If GDB fails to install on the Docs section you may need to install
     # texinfo (Debian)
-    # sudo apt-get install texinfo
+    sudo apt-get install texinfo
     ../${GDB}/configure --target=${TARGET} --program-prefix=${TARGET}- --prefix="${CROSS}" --disable-werror && \
         make && \
         make install && \
         echo -e "${GRE}>>> Finished making ${GDB}.\n${NOC}";
+    sleep 5
 )
 
 # Install dependencies for grub-mkrescue.
