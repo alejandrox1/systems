@@ -12,9 +12,9 @@ V = @
 # out the following line to use those tools (as opposed to the i386-jos-elf
 # tools that the 6.828 make system looks for by default).
 #
-# GCCPREFIX=''
+GCCPREFIX=${PWD}/../cross-compiler/cc-gdb-5.4.0-2.24/cross/bin/i386-jos-elf-
 
 # If the makefile cannot find your QEMU binary, uncomment the
 # following line and set it to the full path to QEMU.
 #
-# QEMU=
+QEMU=qemu-system-i386

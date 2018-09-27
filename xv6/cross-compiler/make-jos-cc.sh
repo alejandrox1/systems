@@ -20,7 +20,7 @@ set -e
 ##                        Environment and Variables                          ##
 ###############################################################################
 # Version for building cross-compiler.
-TARGET=i686-elf
+TARGET=i386-jos-elf
 BINUTILS_VER="2.24"
 GCC_VER="5.4.0"
 GDB_VER="7.11.1"
