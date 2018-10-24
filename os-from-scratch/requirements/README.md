@@ -28,7 +28,7 @@ Linux.
 
 ##### Debian installation
 ```shell
-sudo apt-get update -y && sudo apt-get install -y bochs
+sudo apt-get update -y && sudo apt-get install -y bochs bochs-x
 ```
 
 For more info, visit

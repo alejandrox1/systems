@@ -1,0 +1,4 @@
+# Tell Bochs to use the bochs sector (which performs and endless jump) as if it
+# were a floppy disk inserted into a computer at boot time.
+floppya: 1_44=boot_sect.bin, status=inserted
+boot: a
